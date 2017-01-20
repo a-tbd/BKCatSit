@@ -1,0 +1,205 @@
+// Apps script for Google Sites.
+// Script creates a simple form with date picker and open text fields.  
+// Writes data from form into a Google spreadsheet.
+// Sends an email alert that there's been a new submission.
+
+// Load the UI app
+function doGet() {
+  var app = UiApp.createApplication().setTitle("Book with Brooklyn Cat Boarding");
+  createForm_(app);
+
+  return app;
+}
+
+function createForm_(container) {
+ //create a vertical panel
+  var vPanel = container.createVerticalPanel();
+  vPanel.setWidth("600");
+  vPanel.setStyleAttribute("padding","20px");
+  vPanel.setStyleAttribute("font","Arial");
+  vPanel.setStyleAttribute("fontSize", "12pt");
+  vPanel.setId("vPanel");
+  
+  var hPanel = container.createHorizontalPanel();
+  hPanel.setWidth("400");
+  hPanel.setStyleAttribute("padding","20px");
+  hPanel.setStyleAttribute("font","Arial");
+  hPanel.setStyleAttribute("fontSize", "12pt");
+  hPanel.setId("hPanel");
+  
+  var hPanel2 = container.createHorizontalPanel();
+  hPanel2.setWidth("350");
+  hPanel2.setStyleAttribute("margin-left","20px");
+  hPanel2.setStyleAttribute("font","Arial");
+  hPanel2.setStyleAttribute("fontSize", "12pt");
+  hPanel2.setId("hPanel2");
+  
+  var vPanel2 = container.createVerticalPanel();
+  vPanel2.setWidth("810");
+  vPanel2.setStyleAttribute("padding","20px");
+  vPanel2.setStyleAttribute("font","Arial");
+  vPanel2.setStyleAttribute("fontSize", "12pt");
+  vPanel2.setId("vPanel2");
+  
+  
+  // add name text box
+  var name = container.createLabel().setText("Your name");
+  var nameTextBox = container.createTextBox();
+  nameTextBox.setName("nameTextBox");
+  decorateLabel_(nameTextBox);
+  
+  // add email text box
+  var email = container.createLabel().setText("Your email");
+  var emailTextBox = container.createTextBox();
+  emailTextBox.setName("emailTextBox");
+  decorateLabel_(emailTextBox);
+  
+  // add start date box
+  var date = container.createLabel().setText("Start Date");
+  var datePicker = container.createDatePicker().setName("picker");
+  
+  // add end date box
+  var date2 = container.createLabel().setText("End Date");
+  var datePicker2 = container.createDatePicker().setName("picker2");
+  
+  // other messages
+  var moreInfo = container.createLabel().setText("Anything else we should know?");
+  var subMoreInfo = container.createLabel().setText("e.g. medications, pick-up/drop-off concerns");
+  var moreInfoTextBox = container.createTextArea().setName("moreInfoTextBox");
+  decorateLabel3_(subMoreInfo);
+  moreInfoTextBox.setPixelSize(300, 150);
+  
+  // add submit button
+  var submitButton = container.createButton().setWidth('150px').setHeight('40px');
+  decorateLabel2_(submitButton);
+  submitButton.setText("Book Now");
+  
+  // submit handlers
+  var submitServerHandler = container.createServerClickHandler('submitHandler_');
+  submitServerHandler.addCallbackElement(vPanel);
+  submitServerHandler.addCallbackElement(hPanel);
+  submitServerHandler.addCallbackElement(vPanel2);
+  submitButton.addClickHandler(submitServerHandler);
+  
+  vPanel.add(name);
+  vPanel.add(nameTextBox);
+  vPanel.add(email);
+  vPanel.add(emailTextBox);
+  hPanel2.add(date);
+  hPanel.add(datePicker);
+  hPanel2.add(date2);
+  hPanel.add(datePicker2);
+  
+  vPanel2.add(moreInfo);
+  vPanel2.add(subMoreInfo);
+  vPanel2.add(moreInfoTextBox);
+  vPanel2.add(submitButton);
+  container.add(vPanel);
+  container.add(hPanel2);
+  container.add(hPanel);
+  container.add(vPanel2);
+  
+}
+
+
+function submitHandler_(e) {
+  var app = UiApp.getActiveApplication();
+
+  var newCat = getFormData_(e);
+  submitPage_(app, e);
+
+  app.close();
+  return app;
+}
+
+function getFormData_(e) {
+  // get data
+  var timeStamp = new Date();
+  var name = e.parameter.nameTextBox;
+  var email = e.parameter.emailTextBox;
+  var start = e.parameter.picker;
+  var end = e.parameter.picker2;
+  var moreInfo = e.parameter.moreInfoTextBox;
+  
+  // create new submission array
+  var array = new Array();
+  array[0] = timeStamp;
+  array[1] = name;
+  array[2] = email;
+  array[3] = start;
+  array[4] = end;
+  array[5] = moreInfo;
+  
+  Logger.log(array);
+  
+  // Log data in Google spreadsheet
+  saveNew_(array);
+}
+
+// Display new page UI after data is submitted
+function submitPage_(container, e) {
+  var vPanel = container.getElementById("vPanel");
+  var hPanel = container.getElementById("hPanel");
+  var vPanel2 = container.getElementById("vPanel2");
+  var hPanel2 = container.getElementById("hPanel2");
+  
+  var panel = container.createVerticalPanel();
+  panel.setWidth("810");
+  panel.setStyleAttribute("padding","20px")
+  panel.setId("panel");
+  
+  // hide form
+  vPanel.setVisible(false);
+  hPanel.setVisible(false);
+  vPanel2.setVisible(false);
+  hPanel2.setVisible(false);
+  
+  // set thank you message
+  var message = container.createLabel().setText("Thank you!");
+  message.setStyleAttribute("fontSize","12pt");
+  message.setStyleAttribute("font-weight","light");
+  
+  panel.add(message);
+  
+  container.add(panel);
+  
+}
+
+function saveNew_(array) {
+
+  // get spreadsheet
+  var sheet = SpreadsheetApp.openById("0Al9rZyiIBA6MdEQ3RGYxZ2gzZTRVclRZWDRuVHJpdnc").getSheetByName("New");
+  var nextRow = sheet.getLastRow()+1;
+  
+  var range = sheet.getRange(nextRow, 1, 1, 6);
+  
+  // 
+  range.setValues([array]);
+  sendEmail_();
+}
+
+// send email alert for new form submission
+function sendEmail_() {
+  var email = "annkidder@gmail.com";
+  var subject = "New Booking Request :: BCB";
+  var message = "https://docs.google.com/spreadsheet/ccc?key=0Al9rZyiIBA6MdEQ3RGYxZ2gzZTRVclRZWDRuVHJpdnc#gid=0";
+  MailApp.sendEmail(email, subject, message);
+}
+
+function decorateLabel_(label) {
+  label.setStyleAttribute("fontSize","10pt");
+  label.setStyleAttribute("margin-bottom","20px");
+}
+
+function decorateLabel2_(label) {
+  label.setStyleAttribute("background","FFF380");  //#B0CCFF
+  label.setStyleAttribute("color","5C5858");
+  label.setStyleAttribute("margin-left","20px");
+  label.setStyleAttribute("margin-top","20px");
+}
+
+function decorateLabel3_(label) {
+  label.setStyleAttribute("fontSize","8pt");
+  label.setStyleAttribute("color","gray");
+}
+
