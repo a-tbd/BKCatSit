@@ -2,6 +2,7 @@
 // Script creates a simple form with date picker and open text fields.  
 // Writes data from form into a Google spreadsheet.
 // Sends an email alert that there's been a new submission.
+// https://sites.google.com/site/brooklyncatboarding/book-us
 
 // Load the UI app
 function doGet() {
